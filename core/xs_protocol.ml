@@ -679,7 +679,7 @@ let response hint sent received f = match get_ty sent, get_ty received with
       | "ENOENT" -> raise (Enoent hint)
       | "EAGAIN" -> raise Eagain
       | "EINVAL" -> raise Invalid
-      | s -> raise (Error s)
+      | s -> raise (Error (Printf.sprintf "%s [%s:%S]" s hint (Buffer.contents sent.data)))
     end
   | x, y when x = y ->
     begin match f received with

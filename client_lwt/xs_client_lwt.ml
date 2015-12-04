@@ -17,6 +17,9 @@
 open Lwt
 open Xs_protocol
 
+let src = Logs.Src.create "xenstore.client" ~doc:"Xenstore.Xs_client_lwt"
+module Log = (val Logs.src_log src : Logs.LOG)
+
 module type IO = sig
   type 'a t = 'a Lwt.t
   val return: 'a -> 'a t
@@ -286,10 +289,18 @@ module Client = functor(IO: IO with type 'a t = 'a Lwt.t) -> struct
         return (response hint request res unmarshal)
  end
 
-  let directory h path = rpc "directory" (Xs_handle.accessed_path h path) Request.(PathOp(path, Directory)) Unmarshal.list
-  let read h path = rpc "read" (Xs_handle.accessed_path h path) Request.(PathOp(path, Read)) Unmarshal.string
-  let write h path data = rpc "write" (Xs_handle.accessed_path h path) Request.(PathOp(path, Write data)) Unmarshal.ok
-  let rm h path = rpc "rm" (Xs_handle.accessed_path h path) Request.(PathOp(path, Rm)) Unmarshal.ok
+  let directory h path =
+    Log.debug (fun f -> f "Xs.directory %S" path);
+    rpc "directory" (Xs_handle.accessed_path h path) Request.(PathOp(path, Directory)) Unmarshal.list
+  let read h path =
+    Log.debug (fun f -> f "Xs.read %S" path);
+    rpc "read" (Xs_handle.accessed_path h path) Request.(PathOp(path, Read)) Unmarshal.string
+  let write h path data =
+    Log.debug (fun f -> f "Xs.write %S" path);
+    rpc "write" (Xs_handle.accessed_path h path) Request.(PathOp(path, Write data)) Unmarshal.ok
+  let rm h path =
+    Log.debug (fun f -> f "Xs.rm %S" path);
+    rpc "rm" (Xs_handle.accessed_path h path) Request.(PathOp(path, Rm)) Unmarshal.ok
   let mkdir h path = rpc "mkdir" (Xs_handle.accessed_path h path) Request.(PathOp(path, Mkdir)) Unmarshal.ok
   let setperms h path acl = rpc "setperms" (Xs_handle.accessed_path h path) Request.(PathOp(path, Setperms acl)) Unmarshal.ok
   let debug h cmd_args = rpc "debug" h (Request.Debug cmd_args) Unmarshal.list
