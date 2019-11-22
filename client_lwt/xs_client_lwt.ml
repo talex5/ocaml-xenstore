@@ -218,6 +218,7 @@ module Client = functor(IO: IO with type 'a t = 'a Lwt.t) -> struct
 
 
   let make_unsafe () =
+    Log.info (fun f -> f "** XenStore with unwatch patch **");
     IO.create ()
     >>= fun transport ->
     let t = {
