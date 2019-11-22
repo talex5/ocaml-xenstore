@@ -17,6 +17,9 @@
 open Lwt
 open Xs_protocol
 
+let src = Logs.Src.create "xenstore.client" ~doc:"XenStore client"
+module Log = (val Logs.src_log src : Logs.LOG)
+
 module type IO = sig
   type 'a t = 'a Lwt.t
   val return: 'a -> 'a t
@@ -395,7 +398,14 @@ module Client = functor(IO: IO with type 'a t = 'a Lwt.t) -> struct
         finally loop
           (fun () ->
              let current_paths = Xs_handle.get_watched_paths h in
-             Lwt_list.iter_s (fun p -> unwatch h p token) (elements current_paths)
+             elements current_paths |> Lwt_list.iter_s (fun p ->
+                 Lwt.catch
+                   (fun () -> unwatch h p token)
+                   (fun ex ->
+                      Log.err (fun f -> f "Error unwatching %S: %s" p (Printexc.to_string ex));
+                      Lwt.return_unit
+                   )
+               )
              >>= fun () ->
              Hashtbl.remove client.watchevents token;
              return ()
